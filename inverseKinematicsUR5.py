@@ -40,6 +40,14 @@ class InverseKinematicsUR5:
 		self.a = [0,-0.425,-0.39225,0,0,0]
 		self.alpha = [pi/2,0,0,pi/2,-pi/2,0]
 
+		# Robot EE orientation offset.
+		# Useful if the ee orientation when the all joint = 0 is not
+		#     1  0  0
+		# R = 0  0 -1
+		#     0  1  0
+		# ee_offset = current_R_all_joint_0.transpose * R
+		self.ee_offset = np.eye(4)
+
 		# Robot joint limits
 		self.limit_max = 2 * pi
 		self.limit_min = -2 * pi
@@ -78,8 +86,17 @@ class InverseKinematicsUR5:
 		self.limit_min = limit_min
 
 	def setJointWeights(self, weights):
-		# assign weights list for each joint
+		# This function will assign weights list for each joint
 		self.joint_weight = np.array(weights)
+
+	def setEERotationOffset(self,r_offset_3x3):
+		# This function will assign rotation offset to the ee. r_offset_3x3 should be a numpy array
+		self.ee_offset[0:3,0:3] = r_offset_3x3
+
+	def setEERotationOffsetROS(self):
+		# This function will assign proper tool orientation offset for ROS ur5's urdf.
+		r_offset_3x3 = np.array( [[ 0, 0, 1],[-1, 0, 0],[ 0,-1, 0]] )
+		self.setEERotationOffset(r_offset_3x3)
 
 	def normalize(self,value):
 		# This function will normalize the joint values according to the joint limit parameters
@@ -91,10 +108,10 @@ class InverseKinematicsUR5:
 		return normalized
 
 	def getFlags(self,nominator,denominator):
-		# This fnction is used to check whether the joint value will be valid or not
+		# This function is used to check whether the joint value will be valid or not
 		if denominator == 0:
 			return False
-		return abs(nominator/denominator) < 1.001
+		return abs(nominator/denominator) < 1.01
 
 	def getTheta1(self):
 		# This function will solve joint 1
@@ -230,8 +247,9 @@ class InverseKinematicsUR5:
 				return
 
 	def solveIK(self,forward_kinematics):
-		self.gd = forward_kinematics
-
+		self.gd = forward_kinematics.dot(self.ee_offset)
+		if self.debug:
+			print 'Input to IK:\n', self.gd
 		self.getSolution()
 		number_of_solution = self.countValidSolution()
 		if self.stop_flag or number_of_solution < 1:
