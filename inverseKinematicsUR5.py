@@ -116,9 +116,9 @@ class InverseKinematicsUR5:
 
 		# stop the program early if no solution is possible
 		self.stop_flag = not np.any(self.flags1)
-
-		# print 't1: ', self.theta1
-		# print 'flags1: ',self.flags1
+		if self.debug:
+			print 't1: ', self.theta1
+			print 'flags1: ',self.flags1
 	
 	def getTheta5(self):
 		# This function will solve joint 5
@@ -135,9 +135,9 @@ class InverseKinematicsUR5:
 
 		# stop the program early if no solution is possible
 		self.stop_flag = not np.any(self.flags5)
-
-		# print 't5: ', self.theta5
-		# print 'flags5: ',self.flags5
+		if self.debug:
+			print 't5: ', self.theta5
+			print 'flags5: ',self.flags5
 
 	def getTheta6(self):
 		# This function will solve joint 6
@@ -166,18 +166,19 @@ class InverseKinematicsUR5:
 				T14 = T16.dot(invTransform(T45.dot(T56)))
 
 				P13 = T14.dot(np.array([0,-self.d[3],0,1]))-np.array([0,0,0,1])
-
 				L = P13.dot(P13.transpose()) - self.a[1]**2 - self.a[2]**2
+
 				if abs(L / (2*self.a[1]*self.a[2]) ) > 1:
-					self.flags3[i,j,:] = self.getFlags(L,2*self.a[1]*self.a[3])
+					self.flags3[i,j,:] = self.getFlags(L,2*self.a[1]*self.a[2])
 					L = np.sign(L) * 2*self.a[1]*self.a[2]
 				self.theta3[i,j,0] = acos(L / (2*self.a[1]*self.a[2]) )
 				self.theta2[i,j,0] = -atan2(P13[1],-P13[0]) + asin( self.a[2]*sin(self.theta3[i,j,0])/np.linalg.norm(P13) )
 				self.theta3[i,j,1] = -self.theta3[i,j,0]
 				self.theta2[i,j,1] = -atan2(P13[1],-P13[0]) + asin( self.a[2]*sin(self.theta3[i,j,1])/np.linalg.norm(P13) )
-		# print 't2: ', self.theta2
-		# print 't3: ', self.theta3
-		# print 'flags3: ',self.flags3
+		if self.debug:
+			print 't2: ', self.theta2
+			print 't3: ', self.theta3
+			print 'flags3: ',self.flags3
 
 		# stop the program early if no solution is possible
 		self.stop_flag = not np.any(self.flags3)
@@ -198,7 +199,8 @@ class InverseKinematicsUR5:
 						  transformDHParameter(self.a[2],self.d[2],self.alpha[2],self.theta3[i,j,k]) )
 					T34 = invTransform(T13).dot(T14)
 					self.theta4[i,j,k] = atan2(T34[1,0],T34[0,0])
-		# print 't4: ', self.theta4
+		if self.debug:
+			print 't4: ', self.theta4
 
 	def countValidSolution(self):
 		# This function will count the number of available valid solutions
